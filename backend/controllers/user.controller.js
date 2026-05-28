@@ -1,4 +1,4 @@
-import Usser from "../models/user.model.js";
+
 import { asyncHandler } from "../utils/AsyncHandler.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { ApiError } from "../utils/ApiError.js";
@@ -12,7 +12,7 @@ const genrateToken = function (id) {
         process.env.JWT_SECRET,
         { expiresIn: process.env.JWT_EXPIRE || "7d" }
     );
-};git 
+};
 
 
 const registerUser = asyncHandler(async (req, res) => {
@@ -23,7 +23,7 @@ const registerUser = asyncHandler(async (req, res) => {
         throw new ApiError(400, "All fields are required")
     }
 
-    const existendUser = await User.find({ email })
+    const existendUser = await User.findOne({ email })
 
     if (existendUser) {
         throw new ApiError(409, "User with email or username already exists")
@@ -34,7 +34,15 @@ const registerUser = asyncHandler(async (req, res) => {
     })
 
     const userP = await User.findById(user._id).select("-password");
-    res.status(201).json(new ApiResponse(201, { user, token: genrateToken(user._id) }, "User registered successfully"))
+
+    const token = genrateToken(user._id)
+    res.cookie("token", token, {
+        httpOnly: true,
+        // secure: process.env.NODE_ENV === "production",
+        sameSite: "strict",
+        maxAge: 7 * 24 * 60 * 60 * 1000
+    }).json(new ApiResponse(201, { user: userP, token }, "User registered successfully"))
+
 
 })
 const loginUser = asyncHandler(async (req, res) => {
@@ -46,7 +54,11 @@ const loginUser = asyncHandler(async (req, res) => {
         throw new ApiError(400, "All fields are required")
     }
 
-    const existendUser = await User.findOne({ email })
+    const existingUser = await User.findOne({ email })
+
+    if (!existingUser) {
+        throw new ApiError(401, "Invalid credentials")
+    }
 
     const isPasswordCorrect = await existingUser.comparePassword(password);
 
@@ -54,23 +66,24 @@ const loginUser = asyncHandler(async (req, res) => {
         throw new ApiError(401, "Invalid credentials");
     }
 
-    const checkPassword = user.comparePassword(password)
-
-    if (!checkPassword) {
-        throw new ApiError(401, "Invalid credentials")
-    }
-
-    const user = await User.create({
-        email, password
-    })
+    const user = await User.findById(existingUser._id).select("-password");
 
 
-    res.status(200).json(new ApiResponse(200, { user, token: genrateToken(existendUser._id) }, "User logged in successfully"))
+
+
+    const token = genrateToken(existingUser._id)
+
+    res.cookie("token", token, {
+        httpOnly: true,
+        // secure: process.env.NODE_ENV === "production",   
+        sameSite: "strict",
+        maxAge: 7 * 24 * 60 * 60 * 1000
+    }).status(200).json(new ApiResponse(200, { user, token }, "User logged in successfully"))
 
 })
 const getUserProfile = asyncHandler(async (req, res) => {
 
-    const user = await User.findById(req.user._id)
+    const user = await User.findById(req.user._id).select("-password")
 
     if (!user) {
         throw new ApiError(404, "User not found")
@@ -84,7 +97,7 @@ const updateUserProfile = asyncHandler(async (req, res) => {
 
     const { fullName, email } = req.body
 
-    if (fullName || email) {
+    if (!fullName && !email) {
         throw new ApiError(400, "All fields are required")
 
     }
@@ -94,7 +107,9 @@ const updateUserProfile = asyncHandler(async (req, res) => {
         throw new ApiError(404, "User not found")
     }
 
-    const userUpdate = user.findByIdAndUpdate(req.user._id, { $set: { fullName, email } }, { new: true })
+    const updatedUser = await User.findByIdAndUpdate(req.user._id, { $set: { fullName, email } }, { new: true })
+
+    res.status(200).json(new ApiResponse(200, updatedUser, "User profile updated successfully"))
 
 })
 const deleteUserProfile = asyncHandler(async (req, res) => {
