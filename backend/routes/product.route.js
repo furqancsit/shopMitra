@@ -1,11 +1,12 @@
 import Router from "express";
 import { createProduct, deleteProduct, getAllProducts, getProductById, updateProduct } from "../controllers/Product.controller.js";
 import { protect } from "../middlewares/auth.middleware.js";
-import { adminOnly } from "../middlewares/admin.middleware";
+import { adminOnly } from "../middlewares/admin.middleware.js";
+import { upload } from "../middlewares/multer.middleware.js";
 
 const router = Router();
 
-router.post("/create",protect,adminOnly, createProduct);
+router.post("/create", upload.array("images", 2), protect, adminOnly, createProduct);
 
 // user
 router.get("/all", getAllProducts);

@@ -3,9 +3,11 @@ import { Link } from "react-router-dom"
 import axios from "axios"
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../context/authcontext";
 
 
 const Signup = () => {
+    const { setUser } = useAuth();
 
 
     const [form, setForm] = useState({
@@ -45,8 +47,8 @@ const Signup = () => {
         e.preventDefault()
         if (!formValidation()) return
         try {
-            await axios.post("/api/users/register", form);
-
+          const res =  await axios.post("/api/users/register", form);
+          
             toast.success("Signup successful!");
 
             setForm({
@@ -54,7 +56,7 @@ const Signup = () => {
                 email: "",
                 password: ""
             });
-
+            setUser(res.data.data);
             navigate("/shop")
 
 

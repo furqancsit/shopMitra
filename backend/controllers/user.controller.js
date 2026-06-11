@@ -1,4 +1,4 @@
-
+import uploadToCloudinary from "../utils/uploadToCloudinary.js";
 import { asyncHandler } from "../utils/AsyncHandler.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { ApiError } from "../utils/ApiError.js";
@@ -29,9 +29,20 @@ const registerUser = asyncHandler(async (req, res) => {
         throw new ApiError(409, "User with email or username already exists")
     }
 
+    let profileImage = null;
+    if (req.file) {
+
+        const result = await uploadToCloudinary(req.file.buffer);
+
+        profileImage = {
+            url: result.secure_url,
+            public_id: result.public_id,
+        };
+    }
     const user = await User.create({
-        fullName, email, password
+        fullName, email, password, profileImage,
     })
+
 
     const userP = await User.findById(user._id).select("-password");
 
@@ -126,4 +137,10 @@ const deleteUserProfile = asyncHandler(async (req, res) => {
 }
 )
 
-export { registerUser, loginUser, getUserProfile, updateUserProfile, deleteUserProfile };
+const logOut = asyncHandler(async (req, res) => {
+
+    res.clearCookie("token")
+    res.status(200).json(new ApiResponse(200, "logout succefully"))
+})
+
+export { registerUser, loginUser, getUserProfile, updateUserProfile, deleteUserProfile, logOut };

@@ -18,14 +18,16 @@ const productSchema = new mongoose.Schema({
     },
     category: {
         type: String,
-        enum: ['Electronics', 'Clothing', 'Books', 'Home', 'Toys'],
+        enum: ['men', 'women', 'clothes', 'kids', 'accessories'],
         required: true,
         lowercase: true,
     },
-    imageUrl: {
-        type: String,
-        // required: true,
-    },
+    images: [
+        {
+            url: String,
+            public_id: String,
+        },
+    ],
     discount: {
         type: Number,
         default: 0,

@@ -2,13 +2,14 @@ import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import axios from "axios";
-
+import { useAuth } from "../context/authcontext";
 const Login = () => {
 
     const [form, setForm] = useState({
         email: "",
         password: ""
     })
+    const [loading, setLoading] = useState(false);
 
     const formValidation = () => {
 
@@ -29,25 +30,30 @@ const Login = () => {
 
     }
 
+    const { setUser } = useAuth()
+
     const navigate = useNavigate()
     const handleSubmit = async (e) => {
         e.preventDefault()
         if (!formValidation()) return
 
         try {
+            setLoading(true)
 
-            await axios.post("/api/users/login", form)
+            const { data } = await axios.post("/api/users/login", form)
+
+            setUser(data.data.user)
+
 
             toast.success("successfully login")
-            navigate("/men")
-            setForm({
-                email: "",
-                password: ""
-            })
+            navigate("/");
+
         } catch (error) {
             toast.error(
                 error.response?.data?.message || "Login failed!"
+
             )
+            setLoading(false)
         }
     }
 
@@ -95,6 +101,7 @@ const Login = () => {
                             placeholder="Enter your password"
                             name="password"
                             value={form.password}
+                            
                             onChange={handleInputChange}
                             className="w-full px-4 py-3 border border-gray-300 rounded-lg text-black focus:outline-none focus:ring-2 focus:ring-black"
                         />
@@ -107,17 +114,18 @@ const Login = () => {
                             Remember me
                         </label>
 
-                        <span className="text-black font-medium cursor-pointer hover:underline">
+                        <a href="/forget-password" className="text-black font-medium cursor-pointer hover:underline">
                             Forgot Password?
-                        </span>
+                        </a>
                     </div>
 
                     {/* Login Button */}
                     <button
                         type="submit"
+                        disabled={loading}
                         className="w-full bg-black text-white py-3 rounded-lg font-semibold hover:bg-gray-900 transition duration-300"
                     >
-                        Login
+                        {loading ? "Logging in..." : "Login"}
                     </button>
                 </form>
 

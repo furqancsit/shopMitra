@@ -1,4 +1,4 @@
-import { asyncHandler } from "../../utils/AsyncHandler";
+import { asyncHandler } from "../utils/AsyncHandler.js";
 
 export const adminOnly = asyncHandler(async (req, res, next) => {
 
